@@ -1,0 +1,5 @@
+<div #liveView class="camView">
+  <button (click)="onButtonClick($event)">Enable Webcam</button>
+  <video #webcam autoplay muted width="640" height="480"></video>
+</div>
+{{status()}}
