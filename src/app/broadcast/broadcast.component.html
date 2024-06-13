@@ -1,6 +1,6 @@
 <div #liveView class="camView">
   <button *ngIf="!streamStarted && model" (click)="onButtonClick($event)">Enable Webcam</button>
-  <video #webcam autoplay muted width="640" height="480"></video>
+  <video #webcam playsinline autoplay muted width="640" height="480"></video>
   <div #dots class="dots">
 
   <img src="./dickpick.png" *ngIf="streamStarted && dotsCords['nose'].x && dotsCords['nose'].y"
