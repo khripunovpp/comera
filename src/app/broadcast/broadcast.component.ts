@@ -20,14 +20,15 @@ export class BroadcastComponent {
   status = signal('status');
   video = viewChild<ElementRef<HTMLVideoElement>>('webcam');
   dots = viewChild<ElementRef<HTMLElement>>('dots');
-
   model: any = null;
-
-  picsCount = 5;
   cropPoint = [170, 15];
   cropWidth = 345;
   MODEL_PATH = 'https://tfhub.dev/google/tfjs-model/movenet/singlepose/lightning/4';
   pointWidth = 4;
+  dickPickCords = {
+    x: 0,
+    y: 0,
+  }
   dotsCords: Record<string, {
     x: number,
     y: number,
@@ -52,16 +53,16 @@ export class BroadcastComponent {
     rightAnkle: {x: 0, y: 0, color: 'red'},
   }
   dotsRefs: Record<string, any> = {}
+  streamStarted = false;
+  constraints = {
+    video: true
+  };
 
   onButtonClick(e: Event) {
-    alert('onButtonClick');
     if (this.getUserMediaSupported()) {
       this.enableCam(e);
-      alert('getUserMediaSupported')
     } else {
       console.warn('getUserMedia() is not supported by your browser');
-      alert('getUserMedia() is not supported by your browser')
-
     }
   }
 
@@ -102,29 +103,35 @@ export class BroadcastComponent {
     cords: Record<string, {
       x: number
       y: number
+      confidence: number
     }>,
     key: string,
   ) {
-    if (!this.dotsCords[key]) return;
-    // const dot = document.createElement('div');
-    // dot.style.position = 'absolute';
-    // dot.style.width = `${this.pointWidth}px`;
-    // dot.style.height = `${this.pointWidth}px`;
-    // dot.style.borderRadius = '50%';
-    // dot.style.backgroundColor = this.dotsCords[key].color;
-    const [x, y] = [
-      (cords[key].x * 345) + this.cropPoint[0] - (this.pointWidth / 2),
-      (cords[key].y * 345) + this.cropPoint[1] - (this.pointWidth / 2)
-    ];
-    // dot.style.top = `${y}px`;
-    // dot.style.left = `${x}px`;
-    // this.dots()!.nativeElement.appendChild(dot);
-    //
+    if (!this.dotsCords[key]) return
+    let x = 0
+    let y = 0
+    if (cords[key].confidence >= 0.4) {
+      x = (cords[key].x * 345) + this.cropPoint[0] - (this.pointWidth / 2)
+      y = (cords[key].y * 345) + this.cropPoint[1] - (this.pointWidth / 2)
 
-    this.dotsRefs[key].style.top = `${y}px`;
-    this.dotsRefs[key].style.left = `${x}px`;
+      if (key === 'nose') {
+        this.dickPickCords.x = x
+        this.dickPickCords.y = y
+      }
+    } else {
+      x = 0
+      y = 0
+    }
+    this.dotsCords[key].x = x
+    this.dotsCords[key].y = y
+    this.updateDot(key)
+  }
 
-    // return dot;
+  updateDot(
+    key: string
+  ) {
+    this.dotsRefs[key].style.top = `${this.dotsCords[key].y}px`;
+    this.dotsRefs[key].style.left = `${this.dotsCords[key].x}px`;
   }
 
   async drawPoints(cords: any) {
@@ -248,7 +255,6 @@ export class BroadcastComponent {
   async calculate(
     img: any,
   ) {
-    // this.dots()!.nativeElement.innerHTML = '';
     let imageTensor = tf.browser.fromPixels(img);
     let croppedImage = this.cropImage(imageTensor, this.cropPoint[0], this.cropPoint[1], this.cropWidth);
     let resizedImage = tf.image.resizeBilinear(croppedImage, [192, 192], true).toInt();
@@ -269,45 +275,32 @@ export class BroadcastComponent {
       navigator.mediaDevices.getUserMedia);
   }
 
-  enableCam(event: any) {
-    // Only continue if the COCO-SSD has finished loading.
-    if (!this.model) {
-      return;
-    }
+  enableCam(
+    event: any,
+  ) {
+    if (!this.model) return;
 
-    // Hide the button once clicked.
-    event.target.classList.add('removed');
-
-    // getUsermedia parameters to force video but not audio.
-    const constraints = {
-      video: true
-    };
-
-    // Activate the webcam stream.
-    navigator.mediaDevices.getUserMedia(constraints)
+    navigator.mediaDevices.getUserMedia(this.constraints)
       .then((stream: any) => {
         if (!this.video()) return
         this.renderDots();
         this.video()!.nativeElement.srcObject = stream;
         this.video()!.nativeElement.addEventListener('loadeddata', () => {
+          this.streamStarted = true;
           this.predictWebcam();
         });
       });
   }
 
   predictWebcam() {
-    if (!this.model) {
-      return;
-    }
+    if (!this.model) return;
 
-
-    // Now let's start classifying a frame in the stream.
-    this.calculate(this.video()?.nativeElement).then((predictions: any) => {
-
-      window.requestAnimationFrame(this.predictWebcam.bind(this));
-    }).catch((error: any) => {
-      console.log(error);
-    });
+    this.calculate(this.video()?.nativeElement)
+      .then(() => {
+        window.requestAnimationFrame(this.predictWebcam.bind(this));
+      })
+      .catch((error: any) => {
+        console.log(error);
+      });
   }
-
 }
