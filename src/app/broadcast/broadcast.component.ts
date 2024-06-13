@@ -1,12 +1,17 @@
 import {Component, ElementRef, signal, viewChild, ViewEncapsulation} from '@angular/core';
+import {JsonPipe, NgIf} from "@angular/common";
 
 declare var cocoSsd: any;
 declare var tf: any;
+declare var navigator: any;
 
 @Component({
   selector: 'app-broadcast',
   standalone: true,
-  imports: [],
+  imports: [
+    JsonPipe,
+    NgIf
+  ],
   templateUrl: './broadcast.component.html',
   styleUrl: './broadcast.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -23,12 +28,40 @@ export class BroadcastComponent {
   cropWidth = 345;
   MODEL_PATH = 'https://tfhub.dev/google/tfjs-model/movenet/singlepose/lightning/4';
   pointWidth = 4;
+  dotsCords: Record<string, {
+    x: number,
+    y: number,
+    color: string
+  }> = {
+    nose: {x: 0, y: 0, color: 'blue'},
+    leftEye: {x: 0, y: 0, color: 'red'},
+    rightEye: {x: 0, y: 0, color: 'red'},
+    leftEar: {x: 0, y: 0, color: 'red'},
+    rightEar: {x: 0, y: 0, color: 'red'},
+    leftShoulder: {x: 0, y: 0, color: 'red'},
+    rightShoulder: {x: 0, y: 0, color: 'red'},
+    leftElbow: {x: 0, y: 0, color: 'red'},
+    rightElbow: {x: 0, y: 0, color: 'red'},
+    leftWrist: {x: 0, y: 0, color: 'red'},
+    rightWrist: {x: 0, y: 0, color: 'red'},
+    leftHip: {x: 0, y: 0, color: 'red'},
+    rightHip: {x: 0, y: 0, color: 'red'},
+    leftKnee: {x: 0, y: 0, color: 'red'},
+    rightKnee: {x: 0, y: 0, color: 'red'},
+    leftAnkle: {x: 0, y: 0, color: 'red'},
+    rightAnkle: {x: 0, y: 0, color: 'red'},
+  }
+  dotsRefs: Record<string, any> = {}
 
   onButtonClick(e: Event) {
+    alert('onButtonClick');
     if (this.getUserMediaSupported()) {
       this.enableCam(e);
+      alert('getUserMediaSupported')
     } else {
       console.warn('getUserMedia() is not supported by your browser');
+      alert('getUserMedia() is not supported by your browser')
+
     }
   }
 
@@ -49,41 +82,69 @@ export class BroadcastComponent {
     }
   }
 
-  putDot(xn: any, yn: any, color: any) {
-    const dot = document.createElement('div');
-    dot.style.position = 'absolute';
-    dot.style.width = `${this.pointWidth}px`;
-    dot.style.height = `${this.pointWidth}px`;
-    dot.style.borderRadius = '50%';
-    dot.style.backgroundColor = color;
+  renderDots() {
+    this.dotsRefs = Object.keys(this.dotsCords)
+      .reduce((acc, key) => {
+        const dot = document.createElement('div');
+        dot.id = key;
+        dot.style.position = 'absolute';
+        dot.style.width = `${this.pointWidth}px`;
+        dot.style.height = `${this.pointWidth}px`;
+        dot.style.borderRadius = '50%';
+        dot.style.backgroundColor = this.dotsCords[key].color;
+        this.dots()!.nativeElement.appendChild(dot);
+        acc[key] = dot;
+        return acc;
+      }, {} as any);
+  }
+
+  putDot(
+    cords: Record<string, {
+      x: number
+      y: number
+    }>,
+    key: string,
+  ) {
+    if (!this.dotsCords[key]) return;
+    // const dot = document.createElement('div');
+    // dot.style.position = 'absolute';
+    // dot.style.width = `${this.pointWidth}px`;
+    // dot.style.height = `${this.pointWidth}px`;
+    // dot.style.borderRadius = '50%';
+    // dot.style.backgroundColor = this.dotsCords[key].color;
     const [x, y] = [
-      (xn * 345) + this.cropPoint[0] - (this.pointWidth / 2),
-      (yn * 345) + this.cropPoint[1] - (this.pointWidth / 2)
+      (cords[key].x * 345) + this.cropPoint[0] - (this.pointWidth / 2),
+      (cords[key].y * 345) + this.cropPoint[1] - (this.pointWidth / 2)
     ];
-    dot.style.top = `${y}px`;
-    dot.style.left = `${x}px`;
-    this.dots()!.nativeElement.appendChild(dot);
-    return dot;
+    // dot.style.top = `${y}px`;
+    // dot.style.left = `${x}px`;
+    // this.dots()!.nativeElement.appendChild(dot);
+    //
+
+    this.dotsRefs[key].style.top = `${y}px`;
+    this.dotsRefs[key].style.left = `${x}px`;
+
+    // return dot;
   }
 
   async drawPoints(cords: any) {
-    this.putDot(cords.nose.x, cords.nose.y, 'red');
-    this.putDot(cords.leftEye.x, cords.leftEye.y, 'blue');
-    this.putDot(cords.rightEye.x, cords.rightEye.y, 'blue');
-    this.putDot(cords.leftEar.x, cords.leftEar.y, 'blue');
-    this.putDot(cords.rightEar.x, cords.rightEar.y, 'blue');
-    this.putDot(cords.leftShoulder.x, cords.leftShoulder.y, 'blue');
-    this.putDot(cords.rightShoulder.x, cords.rightShoulder.y, 'blue');
-    this.putDot(cords.leftElbow.x, cords.leftElbow.y, 'blue');
-    this.putDot(cords.rightElbow.x, cords.rightElbow.y, 'blue');
-    this.putDot(cords.leftWrist.x, cords.leftWrist.y, 'blue');
-    this.putDot(cords.rightWrist.x, cords.rightWrist.y, 'blue');
-    this.putDot(cords.leftHip.x, cords.leftHip.y, 'blue');
-    this.putDot(cords.rightHip.x, cords.rightHip.y, 'blue');
-    this.putDot(cords.leftKnee.x, cords.leftKnee.y, 'blue');
-    this.putDot(cords.rightKnee.x, cords.rightKnee.y, 'blue');
-    this.putDot(cords.leftAnkle.x, cords.leftAnkle.y, 'blue');
-    this.putDot(cords.rightAnkle.x, cords.rightAnkle.y, 'blue');
+    this.putDot(cords, 'nose');
+    this.putDot(cords, 'leftEye');
+    this.putDot(cords, 'rightEye');
+    this.putDot(cords, 'leftEar');
+    this.putDot(cords, 'rightEar');
+    this.putDot(cords, 'leftShoulder');
+    this.putDot(cords, 'rightShoulder');
+    this.putDot(cords, 'leftElbow');
+    this.putDot(cords, 'rightElbow');
+    this.putDot(cords, 'leftWrist');
+    this.putDot(cords, 'rightWrist');
+    this.putDot(cords, 'leftHip');
+    this.putDot(cords, 'rightHip');
+    this.putDot(cords, 'leftKnee');
+    this.putDot(cords, 'rightKnee');
+    this.putDot(cords, 'leftAnkle');
+    this.putDot(cords, 'rightAnkle');
   }
 
   parseCords(arrayOutput: any) {
@@ -191,15 +252,16 @@ export class BroadcastComponent {
     let imageTensor = tf.browser.fromPixels(img);
     let croppedImage = this.cropImage(imageTensor, this.cropPoint[0], this.cropPoint[1], this.cropWidth);
     let resizedImage = tf.image.resizeBilinear(croppedImage, [192, 192], true).toInt();
-    let tensorOutput = this.model.predict(tf.expandDims(resizedImage));
+    let rtt = tf.expandDims(resizedImage);
+    let tensorOutput = this.model.predict(rtt);
     let arrayOutput = await tensorOutput.array();
     let cords = this.parseCords(arrayOutput)
-   await this.drawPoints(cords);
+    await this.drawPoints(cords);
     imageTensor.dispose();
     croppedImage.dispose();
     resizedImage.dispose();
     tensorOutput.dispose();
-
+    rtt.dispose();
   }
 
   getUserMediaSupported() {
@@ -223,8 +285,9 @@ export class BroadcastComponent {
 
     // Activate the webcam stream.
     navigator.mediaDevices.getUserMedia(constraints)
-      .then((stream) => {
+      .then((stream: any) => {
         if (!this.video()) return
+        this.renderDots();
         this.video()!.nativeElement.srcObject = stream;
         this.video()!.nativeElement.addEventListener('loadeddata', () => {
           this.predictWebcam();
