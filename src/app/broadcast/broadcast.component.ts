@@ -35,22 +35,22 @@ export class BroadcastComponent {
     color: string
   }> = {
     nose: {x: 0, y: 0, color: 'blue'},
-    leftEye: {x: 0, y: 0, color: 'red'},
-    rightEye: {x: 0, y: 0, color: 'red'},
-    leftEar: {x: 0, y: 0, color: 'red'},
-    rightEar: {x: 0, y: 0, color: 'red'},
-    leftShoulder: {x: 0, y: 0, color: 'red'},
-    rightShoulder: {x: 0, y: 0, color: 'red'},
-    leftElbow: {x: 0, y: 0, color: 'red'},
-    rightElbow: {x: 0, y: 0, color: 'red'},
-    leftWrist: {x: 0, y: 0, color: 'red'},
-    rightWrist: {x: 0, y: 0, color: 'red'},
-    leftHip: {x: 0, y: 0, color: 'red'},
-    rightHip: {x: 0, y: 0, color: 'red'},
-    leftKnee: {x: 0, y: 0, color: 'red'},
-    rightKnee: {x: 0, y: 0, color: 'red'},
-    leftAnkle: {x: 0, y: 0, color: 'red'},
-    rightAnkle: {x: 0, y: 0, color: 'red'},
+    // leftEye: {x: 0, y: 0, color: 'red'},
+    // rightEye: {x: 0, y: 0, color: 'red'},
+    // leftEar: {x: 0, y: 0, color: 'red'},
+    // rightEar: {x: 0, y: 0, color: 'red'},
+    // leftShoulder: {x: 0, y: 0, color: 'red'},
+    // rightShoulder: {x: 0, y: 0, color: 'red'},
+    // leftElbow: {x: 0, y: 0, color: 'red'},
+    // rightElbow: {x: 0, y: 0, color: 'red'},
+    // leftWrist: {x: 0, y: 0, color: 'red'},
+    // rightWrist: {x: 0, y: 0, color: 'red'},
+    // leftHip: {x: 0, y: 0, color: 'red'},
+    // rightHip: {x: 0, y: 0, color: 'red'},
+    // leftKnee: {x: 0, y: 0, color: 'red'},
+    // rightKnee: {x: 0, y: 0, color: 'red'},
+    // leftAnkle: {x: 0, y: 0, color: 'red'},
+    // rightAnkle: {x: 0, y: 0, color: 'red'},
   }
   dotsRefs: Record<string, any> = {}
   streamStarted = false;
@@ -135,23 +135,9 @@ export class BroadcastComponent {
   }
 
   async drawPoints(cords: any) {
-    this.putDot(cords, 'nose');
-    this.putDot(cords, 'leftEye');
-    this.putDot(cords, 'rightEye');
-    this.putDot(cords, 'leftEar');
-    this.putDot(cords, 'rightEar');
-    this.putDot(cords, 'leftShoulder');
-    this.putDot(cords, 'rightShoulder');
-    this.putDot(cords, 'leftElbow');
-    this.putDot(cords, 'rightElbow');
-    this.putDot(cords, 'leftWrist');
-    this.putDot(cords, 'rightWrist');
-    this.putDot(cords, 'leftHip');
-    this.putDot(cords, 'rightHip');
-    this.putDot(cords, 'leftKnee');
-    this.putDot(cords, 'rightKnee');
-    this.putDot(cords, 'leftAnkle');
-    this.putDot(cords, 'rightAnkle');
+    Object.keys(this.dotsCords).forEach((key) => {
+      this.putDot(cords, key);
+    });
   }
 
   parseCords(arrayOutput: any) {
