@@ -115,8 +115,8 @@ export class BroadcastComponent {
       y = (cords[key].y * 345) + this.cropPoint[1] - (this.pointWidth / 2)
 
       if (key === 'nose') {
-        this.dickPickCords.x = x
-        this.dickPickCords.y = y
+        this.dickPickCords.x = x - 40
+        this.dickPickCords.y = y - 70
       }
     } else {
       x = 0
