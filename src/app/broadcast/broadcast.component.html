@@ -1,11 +1,18 @@
 <div #liveView class="camView">
-  <button *ngIf="!streamStarted && model" (click)="onButtonClick($event)">Enable Webcam</button>
+  <button *ngIf="!streamStarted"
+          [disabled]="!model"
+          (click)="onButtonClick($event)"
+          class="enableCamButton">
+    Enable Webcam
+  </button>
+
   <video #webcam playsinline autoplay muted width="640" height="480"></video>
+
   <div #dots class="dots">
 
-  <img src="./dickpick.png" *ngIf="streamStarted && dotsCords['nose'].x && dotsCords['nose'].y"
-       [style.left.px]="dotsCords['nose'].x - 40" [style.top.px]="dotsCords['nose'].y - 70"
-       style="position: absolute"
-       alt="" width="80">
+    <img src="./dickpick.png" *ngIf="streamStarted && dotsCords['nose'].x && dotsCords['nose'].y"
+         [style.left.px]="dotsCords['nose'].x - 40" [style.top.px]="dotsCords['nose'].y - 70"
+         style="position: absolute"
+         alt="" width="80">
   </div>
 </div>
