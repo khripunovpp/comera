@@ -3,7 +3,7 @@
           [disabled]="!model"
           (click)="onButtonClick($event)"
           class="enableCamButton">
-    Enable Webcam
+    {{model ? 'Enable \nWebcam' : 'Wait \nbitch'}}
   </button>
 
   <video #webcam

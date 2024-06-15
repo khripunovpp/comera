@@ -30,10 +30,10 @@ section {
   display: flex;
   justify-content: center;
   align-items: center;
-  cursor: pointer;
 }
 
 .enableCamButton {
+  cursor: pointer;
   position: absolute;
   z-index: 1;
   background: red;
@@ -49,6 +49,7 @@ section {
   border: none;
   text-transform: uppercase;
   line-height: 1.5;
+  white-space: pre-wrap;
 
   &[disabled] {
     opacity: 0.5;
