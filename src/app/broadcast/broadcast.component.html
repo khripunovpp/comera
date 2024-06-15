@@ -1,25 +1,31 @@
 <div #liveView class="camView">
-  <button *ngIf="!streamStarted"
-          [disabled]="!model"
-          (click)="onButtonClick($event)"
-          class="enableCamButton">
-    {{model ? 'Enable \nWebcam' : 'Wait \nbitch'}}
-  </button>
+  @if (supports()) {
+    <button *ngIf="!streamStarted"
+            [disabled]="!model"
+            (click)="onButtonClick($event)"
+            class="enableCamButton">
+      {{ model ? 'Enable \nWebcam' : 'Wait \nbitch' }}
+    </button>
+  } @else {
+    <p class="noSupport">Ohh shit! I'm done, i cannot take it</p>
+  }
 
-  <video #webcam
-         playsinline
-         autoplay
-         muted
-         width="640"
-         height="480"></video>
+  <div class="videoView">
+    <video #webcam
+           playsinline
+           autoplay
+           muted
+           width="640"
+           height="480"></video>
 
-  <div #dots class="dots">
-    <img src="./dickpick.png"
-         [hidden]="!streamStarted || !dickPickCords.x || !dickPickCords.y"
-         [style.left.px]="dickPickCords.x"
-         [style.top.px]="dickPickCords.y"
-         style="position: absolute"
-         alt=""
-         width="80">
+    <div #dots class="dots" [hidden]="!streamStarted">
+      <img src="./dickpick.png"
+           [hidden]="!streamStarted || !dickPickCords.x || !dickPickCords.y"
+           [style.left.px]="dickPickCords.x"
+           [style.top.px]="dickPickCords.y"
+           style="position: absolute"
+           alt=""
+           width="80">
+    </div>
   </div>
 </div>

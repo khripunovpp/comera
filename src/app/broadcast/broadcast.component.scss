@@ -12,17 +12,8 @@ video {
   display: block;
 }
 
-section {
-  opacity: 1;
-  transition: opacity 500ms ease-in-out;
-}
-
-.removed {
-  display: none;
-}
-
-.invisible {
-  opacity: 0.2;
+.videoView {
+  position: relative;
 }
 
 .camView {
@@ -30,6 +21,8 @@ section {
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
+  min-height: 100vh;
 }
 
 .enableCamButton {
@@ -56,42 +49,9 @@ section {
   }
 }
 
-.highlighter {
-  background: rgba(0, 255, 0, 0.25);
-  border: 1px dashed #fff;
+.noSupport {
+  color: red;
+  text-align: center;position: absolute;
   z-index: 1;
-  position: absolute;
 }
-
-.camera-example {
-  display: none;
-}
-
-.movenet-example {
-  display: inline-flex;
-  position: relative;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  flex-direction: column;
-}
-
-
-.pictureContainer {
-  position: relative;
-
-  img {
-
-    max-width: 640px;
-  }
-
-  .dots {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-  }
-}
-
 

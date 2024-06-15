@@ -57,9 +57,11 @@ export class BroadcastComponent {
   constraints = {
     video: true
   };
+  supports = signal(!!(navigator.mediaDevices &&
+    navigator.mediaDevices.getUserMedia))
 
   onButtonClick(e: Event) {
-    if (this.getUserMediaSupported()) {
+    if (this.supports()) {
       this.enableCam(e);
     } else {
       console.warn('getUserMedia() is not supported by your browser');
@@ -113,17 +115,21 @@ export class BroadcastComponent {
     if (cords[key].confidence >= 0.4) {
       x = (cords[key].x * 345) + this.cropPoint[0] - (this.pointWidth / 2)
       y = (cords[key].y * 345) + this.cropPoint[1] - (this.pointWidth / 2)
-
-      if (key === 'nose') {
-        this.dickPickCords.x = x - 40
-        this.dickPickCords.y = y - 70
-      }
     } else {
       x = 0
       y = 0
     }
     this.dotsCords[key].x = x
     this.dotsCords[key].y = y
+
+    if (key === 'nose' && cords[key].confidence >= 0.4) {
+      this.dickPickCords.x = x - 40
+      this.dickPickCords.y = y - 70
+    } else {
+      this.dickPickCords.x = 0
+      this.dickPickCords.y = 0
+    }
+
     this.updateDot(key)
   }
 
@@ -256,10 +262,7 @@ export class BroadcastComponent {
     rtt.dispose();
   }
 
-  getUserMediaSupported() {
-    return !!(navigator.mediaDevices &&
-      navigator.mediaDevices.getUserMedia);
-  }
+  // supports = signal(false)
 
   enableCam(
     event: any,
