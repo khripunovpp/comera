@@ -1,5 +1,6 @@
 import {Component, ElementRef, signal, viewChild, ViewEncapsulation} from '@angular/core';
 import {JsonPipe, NgIf} from "@angular/common";
+import {Helpers} from "../helpers";
 
 declare var cocoSsd: any;
 declare var tf: any;
@@ -59,6 +60,10 @@ export class BroadcastComponent {
   };
   supports = signal(!!(navigator.mediaDevices &&
     navigator.mediaDevices.getUserMedia))
+  bufferLength = 10;
+// Добавьте эти поля в ваш класс для хранения предыдущих координат
+  private previousCoords: Record<string, { x: number[], y: number[] }> = {};
+  private readonly threshold = 0.5; // Установите пороговое значение отклонения
 
   onButtonClick(e: Event) {
     if (this.supports()) {
@@ -101,36 +106,55 @@ export class BroadcastComponent {
       }, {} as any);
   }
 
-  putDot(
-    cords: Record<string, {
-      x: number
-      y: number
-      confidence: number
-    }>,
+  putIfOk(
     key: string,
+    value: [number, number],
   ) {
-    if (!this.dotsCords[key]) return
-    let x = 0
-    let y = 0
-    if (cords[key].confidence >= 0.4) {
-      x = (cords[key].x * 345) + this.cropPoint[0] - (this.pointWidth / 2)
-      y = (cords[key].y * 345) + this.cropPoint[1] - (this.pointWidth / 2)
-    } else {
-      x = 0
-      y = 0
+    if (!this.previousCoords[key]) {
+      this.previousCoords[key] = {x: [], y: []};
     }
-    this.dotsCords[key].x = x
-    this.dotsCords[key].y = y
+    const shouldUpdateDotsCordsX = this.calculateStdDeviation(this.previousCoords[key].x, value[0]);
+    const shouldUpdateDotsCordsY = this.calculateStdDeviation(this.previousCoords[key].y, value[1]);
 
-    if (key === 'nose' && cords[key].confidence >= 0.4) {
+    if (this.isOk(shouldUpdateDotsCordsX)) {
+      console.log('shouldUpdateDotsCordsX', shouldUpdateDotsCordsX)
+      this.dotsCords[key].x = value[0];
+    }
+    if (this.isOk(shouldUpdateDotsCordsY)) {
+      console.log('shouldUpdateDotsCordsY', shouldUpdateDotsCordsY)
+      this.dotsCords[key].y = value[1];
+    }
+  }
+
+  getCords(
+    key: string
+  ) {
+    return this.dotsCords[key];
+  }
+
+  putDot(
+    cords: Record<string, { x: number; y: number; confidence: number }>,
+    key: string
+  ) {
+    if (!this.getCords(key)) return;
+    const enoughConfidence = cords[key].confidence >= 0.4;
+    let realX = 0;
+    let realY = 0;
+
+    if (enoughConfidence) {
+      realX = Math.ceil((cords[key].x * 345) + this.cropPoint[0] - (this.pointWidth / 2));
+      realY = Math.ceil((cords[key].y * 345) + this.cropPoint[1] - (this.pointWidth / 2));
+
+      this.putIfOk(key, [realX, realY]);
+    }
+
+    if (key === 'nose' && enoughConfidence) {
+      const {x, y} = this.getCords(key);
       this.dickPickCords.x = x - 40
       this.dickPickCords.y = y - 70
-    } else {
-      this.dickPickCords.x = 0
-      this.dickPickCords.y = 0
     }
 
-    this.updateDot(key)
+    this.updateDot(key);
   }
 
   updateDot(
@@ -276,20 +300,46 @@ export class BroadcastComponent {
         this.video()!.nativeElement.srcObject = stream;
         this.video()!.nativeElement.addEventListener('loadeddata', () => {
           this.streamStarted = true;
-          this.predictWebcam();
+
+          const startTime = performance.now();
+          this.predictWebcam(startTime);
         });
       });
   }
 
-  predictWebcam() {
+  predictWebcam(currentTime: number) {
     if (!this.model) return;
 
     this.calculate(this.video()?.nativeElement)
       .then(() => {
-        window.requestAnimationFrame(this.predictWebcam.bind(this));
+        window.requestAnimationFrame(() => {
+          this.predictWebcam(currentTime);
+        });
       })
       .catch((error: any) => {
         console.log(error);
       });
+  }
+
+  private isOk(
+    stdDeviation: number
+  ) {
+    return stdDeviation > this.threshold;
+  }
+
+  private calculateStdDeviation(coords: number[], newValue: number): number {
+    if (newValue) coords.push(newValue);
+
+    // Ограничиваем размер массива до последних 10 элементов
+    if (coords.length > this.bufferLength) coords.shift();
+
+    // Вычисляем среднее значение
+    const mean = Helpers.calculateMean(coords);
+
+    // Вычисляем среднее отклонение
+    const stdDeviation = Helpers.calculateStdDeviation(coords, mean);
+
+    // Возвращаем true, если стандартное отклонение превышает пороговое значение
+    return stdDeviation;
   }
 }
