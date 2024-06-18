@@ -58,3 +58,9 @@ video {
 .dickPick {
   transition: transform 0.5s ease-in;
 }
+
+.window {
+  position: absolute;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.1);
+}
