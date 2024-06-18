@@ -10,5 +10,5 @@ import {BroadcastComponent} from "./broadcast/broadcast.component";
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
-  title = 'comera';
+  title = 'cumera';
 }

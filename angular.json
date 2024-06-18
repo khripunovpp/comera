@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "comera": {
+    "cumera": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -64,10 +64,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "comera:build:production"
+              "buildTarget": "cumera:build:production"
             },
             "development": {
-              "buildTarget": "comera:build:development"
+              "buildTarget": "cumera:build:development"
             }
           },
           "defaultConfiguration": "development"
