@@ -20,11 +20,10 @@
 
   <div class="videoView">
     <video #webcam
+           [attr.height]="broadcastService.windowWidth"
            autoplay
-           height="480"
            muted
-           playsinline
-           width="640">
+           playsinline>
 
     </video>
 

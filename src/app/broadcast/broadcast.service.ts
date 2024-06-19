@@ -86,11 +86,14 @@ export class BroadcastService {
     return this.picksDimensions[this.activePic()].height;
   }
 
+  get cropPoints() {
+    const [x, y] = this.movenetModelService.getCropPoint();
+    return {x, y};
+  }
+
+
   get windowCords() {
-    return {
-      x: this.movenetModelService.cropPoint[0],
-      y: this.movenetModelService.cropPoint[1],
-    }
+    return this.cropPoints;
   }
 
   get windowWidth() {
@@ -178,9 +181,10 @@ export class BroadcastService {
       y: number
     },
   ): [number, number] {
+    const {x, y} = this.cropPoints;
     return [
-      Math.ceil((value.x * this.movenetModelService.cropWidth) + this.movenetModelService.cropPoint[0] - (this.pointWidth / 2)),
-      Math.ceil((value.y * this.movenetModelService.cropWidth) + this.movenetModelService.cropPoint[1] - (this.pointWidth / 2))
+      Math.ceil((value.x * this.movenetModelService.cropWidth) + x - (this.pointWidth / 2)),
+      Math.ceil((value.y * this.movenetModelService.cropWidth) + y - (this.pointWidth / 2))
     ]
   }
 

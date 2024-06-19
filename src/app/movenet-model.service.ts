@@ -1,4 +1,4 @@
-import {inject, Injectable, signal} from "@angular/core";
+import {inject, Injectable} from "@angular/core";
 import {tfProv} from "./tf.provider";
 import {ModelService} from "./model.service";
 import {CameraService} from "./camera.service";
@@ -8,17 +8,15 @@ import {CameraService} from "./camera.service";
 })
 export class MovenetModelService {
 
-  canvas = signal<HTMLCanvasElement | null>(null)
-  cameraService = inject(CameraService);
-  tf = inject(tfProv)
-  cropPoint = [170, 15];
-  cropWidth = 345;
-  modelService = inject(ModelService);
+  readonly cropWidth = 480;
+  // canvas = signal<HTMLCanvasElement | null>(null)
+  private readonly cameraService = inject(CameraService);
+  private readonly tf = inject(tfProv)
+  private readonly modelService = inject(ModelService);
 
   bind(
     canvasElement: HTMLCanvasElement,
   ) {
-    this.canvas.set(canvasElement);
   }
 
   predict(
@@ -27,9 +25,19 @@ export class MovenetModelService {
     return this.modelService.model().predict(input);
   }
 
+  getCropPoint() {
+    const video = this.cameraService.video()!;
+    if (!video) return [0, 0];
+    return [
+      (video.videoWidth - this.cropWidth) / 2,
+      0,
+    ]
+  }
+
   prepareImgTensor() {
+    const points = this.getCropPoint();
     const imageTensor = this.tf.browser.fromPixels(this.cameraService.video());
-    const croppedImage = this._cropImage(imageTensor, this.cropPoint[0], this.cropPoint[1], this.cropWidth);
+    const croppedImage = this._cropImage(imageTensor, points[0], points[1], this.cropWidth);
     const resizedImage = this.tf.image.resizeBilinear(croppedImage, [192, 192], true).toInt();
     const tensor = this.tf.expandDims(resizedImage);
 
@@ -93,7 +101,6 @@ export class MovenetModelService {
         y: points[5][0],
         confidence: points[5][2]
       },
-
       rightShoulder: {
         x: points[6][1],
         y: points[6][0],
