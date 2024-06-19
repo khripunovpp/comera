@@ -3,16 +3,15 @@ import {
   Component,
   computed,
   ElementRef,
+  inject,
   signal,
   viewChild,
   ViewEncapsulation
 } from '@angular/core';
 import {JsonPipe, NgIf} from "@angular/common";
 import {Helpers} from "../helpers";
-
-declare var cocoSsd: any;
-declare var tf: any;
-declare var navigator: any;
+import {ModelService} from "./model.service";
+import {tfProv} from "../tf.provider";
 
 
 @Component({
@@ -43,13 +42,12 @@ export class BroadcastComponent {
     },
   }
   activePic = signal('dickMask');
-  status = signal('status');
   video = viewChild<ElementRef<HTMLVideoElement>>('webcam');
   dots = viewChild<ElementRef<HTMLElement>>('dots');
-  model = signal<any>(null);
+  modelService = inject(ModelService);
+
   cropPoint = [170, 15];
   cropWidth = 345;
-  MODEL_PATH = 'https://tfhub.dev/google/tfjs-model/movenet/singlepose/lightning/4';
   pointWidth = 4;
   dotsCords: Record<string, {
     x: number,
@@ -91,8 +89,9 @@ export class BroadcastComponent {
       && this.dickPickCords().y > 0
   });
   canEnableCam = computed(() => {
-    return this.supports() && this.model();
+    return this.supports() && this.modelService.model();
   });
+  tf = inject(tfProv)
   private readonly bufferLength = 10;
   private readonly confidenceThreshold = 0.4;
   private readonly previousCoords: Record<string, { x: number[], y: number[] }> = {};
@@ -115,20 +114,7 @@ export class BroadcastComponent {
   }
 
   ngOnInit() {
-    if (tf.version.tfjs) {
-      if (this.status()) {
-        this.status.set('Loaded TensorFlow.js - version: ' + tf.version.tfjs);
-      }
-      this.loadModel();
-
-    }
-  }
-
-  async loadModel() {
-    this.model.set(await tf.loadGraphModel(this.MODEL_PATH, {fromTFHub: true}));
-    if (this.status()) {
-      this.status.set('Model loaded');
-    }
+    this.modelService.load()
   }
 
   renderDots() {
@@ -317,17 +303,17 @@ export class BroadcastComponent {
   cropImage(image: any, x: any, y: any, width: any) {
     const cropStartPoint = [y, x];
     const cropSize = [width, width];
-    return tf.slice(image, cropStartPoint, cropSize);
+    return this.tf.slice(image, cropStartPoint, cropSize);
   }
 
   async calculate(
     img: any,
   ) {
-    let imageTensor = tf.browser.fromPixels(img);
+    let imageTensor = this.tf.browser.fromPixels(img);
     let croppedImage = this.cropImage(imageTensor, this.cropPoint[0], this.cropPoint[1], this.cropWidth);
-    let resizedImage = tf.image.resizeBilinear(croppedImage, [192, 192], true).toInt();
-    let rtt = tf.expandDims(resizedImage);
-    let tensorOutput = this.model().predict(rtt);
+    let resizedImage = this.tf.image.resizeBilinear(croppedImage, [192, 192], true).toInt();
+    let rtt = this.tf.expandDims(resizedImage);
+    let tensorOutput = this.modelService.model().predict(rtt);
     let arrayOutput = await tensorOutput.array();
     let cords = this.parseCords(arrayOutput)
     await this.drawPoints(cords);
@@ -343,7 +329,7 @@ export class BroadcastComponent {
   enableCam(
     event: any,
   ) {
-    if (!this.model()) return;
+    if (!this.modelService.model()) return;
 
     navigator.mediaDevices.getUserMedia(this.constraints)
       .then((stream: any) => {
@@ -360,7 +346,7 @@ export class BroadcastComponent {
   }
 
   predictWebcam(currentTime: number) {
-    if (!this.model()) return;
+    if (!this.modelService.model()) return;
 
     this.calculate(this.video()?.nativeElement)
       .then(() => {
