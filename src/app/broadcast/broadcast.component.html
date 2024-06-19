@@ -7,32 +7,44 @@
       {{ model() ? 'Enable \nWebcam' : 'Wait \nbitch' }}
     </button>
   } @else {
-    <p class="noSupport">Ohh shit! I'm done, i cannot take it</p>
+    <p class="noSupport">
+      Ohh shit! I'm done, i cannot take it
+    </p>
   }
 
   <div class="videoView">
     <video #webcam
-           playsinline
            autoplay
+           height="480"
            muted
-           width="640"
-           height="480"></video>
+           playsinline
+           width="640">
 
-    <div #dots class="dots" [hidden]="!streamStarted">
+    </video>
+
+    <div #dots [hidden]="!streamStarted" class="dots">
       <img [attr.src]="dickSrc"
+           [attr.width]="picksDimensions[activePic()].width"
            [hidden]="!shouldShowDick()"
            [style.transform]="transform"
-           class="dickPick"
            [style.transition-duration.ms]="transitionDuration"
            alt=""
-           [attr.width]="picksDimensions[activePic()].width">
+           class="dickPick">
 
-      <div class="window"
-           #window
+      <div #window
+           [style.height.px]="cropWidth"
            [style.left.px]="cropPoint[0]"
            [style.top.px]="cropPoint[1]"
            [style.width.px]="cropWidth"
-           [style.height.px]="cropWidth"></div>
+           class="window">
+
+      </div>
     </div>
-    <!--</div>-->
   </div>
+
+  <button (click)="changePic()"
+          [hidden]="!streamStarted"
+          class="changeButton">
+    Try another dick
+  </button>
+</div>

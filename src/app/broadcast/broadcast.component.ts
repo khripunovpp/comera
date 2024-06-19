@@ -373,6 +373,15 @@ export class BroadcastComponent {
       });
   }
 
+  changePic() {
+    this.dickPickCords.set({
+      x: 0,
+      y: 0
+    });
+
+    this.activePic.set(this.activePic() === 'dickMask' ? 'dickpick' : 'dickMask');
+  }
+
   private isOk(
     stdDeviation: number
   ) {
