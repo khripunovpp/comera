@@ -10,9 +10,9 @@ import {
 } from '@angular/core';
 import {JsonPipe, NgIf} from "@angular/common";
 import {Helpers} from "../helpers";
-import {ModelService} from "./model.service";
+import {ModelService} from "../model.service";
 import {tfProv} from "../tf.provider";
-
+import {CameraService} from "../camera.service";
 
 @Component({
   selector: 'app-broadcast',
@@ -45,7 +45,7 @@ export class BroadcastComponent {
   video = viewChild<ElementRef<HTMLVideoElement>>('webcam');
   dots = viewChild<ElementRef<HTMLElement>>('dots');
   modelService = inject(ModelService);
-
+  cameraService = inject(CameraService);
   cropPoint = [170, 15];
   cropWidth = 345;
   pointWidth = 4;
@@ -73,12 +73,7 @@ export class BroadcastComponent {
     // rightAnkle: {x: 0, y: 0, color: 'red'},
   }
   dotsRefs: Record<string, any> = {}
-  streamStarted = false;
-  constraints = {
-    video: true
-  };
-  supports = signal(!!(navigator.mediaDevices &&
-    navigator.mediaDevices.getUserMedia))
+
   readonly transitionDuration = 0.07;
   dickPickCords = signal({
     x: 0,
@@ -89,7 +84,7 @@ export class BroadcastComponent {
       && this.dickPickCords().y > 0
   });
   canEnableCam = computed(() => {
-    return this.supports() && this.modelService.model();
+    return this.cameraService.supports() && this.modelService.model();
   });
   tf = inject(tfProv)
   private readonly bufferLength = 10;
@@ -106,7 +101,7 @@ export class BroadcastComponent {
   }
 
   onButtonClick(e: Event) {
-    if (this.supports()) {
+    if (this.cameraService.supports()) {
       this.enableCam(e);
     } else {
       console.warn('getUserMedia() is not supported by your browser');
@@ -114,7 +109,9 @@ export class BroadcastComponent {
   }
 
   ngOnInit() {
-    this.modelService.load()
+    this.modelService.load().then(() => {
+      this.cameraService.bind(this.video()!.nativeElement);
+    });
   }
 
   renderDots() {
@@ -144,11 +141,9 @@ export class BroadcastComponent {
     const shouldUpdateDotsCordsY = this.calculateStdDeviation(this.previousCoords[key].y, value[1]);
 
     if (this.isOk(shouldUpdateDotsCordsX)) {
-      console.log('shouldUpdateDotsCordsX', shouldUpdateDotsCordsX)
       this.dotsCords[key].x = value[0];
     }
     if (this.isOk(shouldUpdateDotsCordsY)) {
-      console.log('shouldUpdateDotsCordsY', shouldUpdateDotsCordsY)
       this.dotsCords[key].y = value[1];
     }
   }
@@ -324,25 +319,15 @@ export class BroadcastComponent {
     rtt.dispose();
   }
 
-  // supports = signal(false)
-
   enableCam(
     event: any,
   ) {
     if (!this.modelService.model()) return;
 
-    navigator.mediaDevices.getUserMedia(this.constraints)
-      .then((stream: any) => {
-        if (!this.video()) return
-        // this.renderDots();
-        this.video()!.nativeElement.srcObject = stream;
-        this.video()!.nativeElement.addEventListener('loadeddata', () => {
-          this.streamStarted = true;
-
-          const startTime = performance.now();
-          this.predictWebcam(startTime);
-        });
-      });
+    this.cameraService.enableCam().then(() => {
+      const startTime = performance.now();
+      this.predictWebcam(startTime);
+    })
   }
 
   predictWebcam(currentTime: number) {
@@ -355,7 +340,7 @@ export class BroadcastComponent {
         });
       })
       .catch((error: any) => {
-        console.log(error);
+        console.error(error);
       });
   }
 

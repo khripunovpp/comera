@@ -1,5 +1,5 @@
 import {inject, Injectable, signal} from "@angular/core";
-import {tfProv} from "../tf.provider";
+import {tfProv} from "./tf.provider";
 
 
 @Injectable({

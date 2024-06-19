@@ -1,6 +1,7 @@
-<div #liveView class="camView">
-  @if (supports()) {
-    <button *ngIf="!streamStarted"
+<div #liveView
+     class="camView">
+  @if (cameraService.supports()) {
+    <button *ngIf="!cameraService.streamStarted"
             [disabled]="!canEnableCam()"
             (click)="onButtonClick($event)"
             class="enableCamButton">
@@ -22,7 +23,9 @@
 
     </video>
 
-    <div #dots [hidden]="!streamStarted" class="dots">
+    <div #dots
+         [hidden]="!cameraService.streamStarted"
+         class="dots">
       <img [attr.src]="dickSrc"
            [attr.width]="picksDimensions[activePic()].width"
            [hidden]="!shouldShowDick()"
@@ -43,7 +46,7 @@
   </div>
 
   <button (click)="changePic()"
-          [hidden]="!streamStarted"
+          [hidden]="!cameraService.streamStarted"
           class="changeButton">
     Try another dick
   </button>
