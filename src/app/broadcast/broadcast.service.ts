@@ -3,6 +3,7 @@ import {CameraService} from "../camera.service";
 import {ModelService} from "../model.service";
 import {MovenetModelService} from "../movenet-model.service";
 import {Helpers} from "../helpers";
+import _ from 'lodash';
 
 @Injectable({
   providedIn: 'root'
@@ -67,6 +68,9 @@ export class BroadcastService {
   streamStarted = this.cameraService.streamStarted
   supports = this.cameraService.supports
   modelReady = this.modelService.model
+  predictWebcamThrottled = _.throttle(() => {
+    this.predictWebcam();
+  }, 120);
   private readonly previousCoords: Record<string, { x: number[], y: number[] }> = {};
   private readonly confidenceThreshold = 0.4;
   private readonly bufferLength = 10;
@@ -181,12 +185,12 @@ export class BroadcastService {
     });
   }
 
-  predictWebcam(currentTime: number) {
+  predictWebcam() {
     this.movenetModelService.calculate()
       .then(cords => this.drawPoints(cords))
       .then(() => {
         window.requestAnimationFrame(() => {
-          this.predictWebcam(currentTime);
+          this.predictWebcamThrottled();
         });
       })
       .catch((error: any) => {
@@ -216,8 +220,7 @@ export class BroadcastService {
 
   private _enableCam() {
     this.cameraService.enableCam().then(() => {
-      const startTime = performance.now();
-      this.predictWebcam(startTime);
+      this.predictWebcamThrottled();
     })
   }
 

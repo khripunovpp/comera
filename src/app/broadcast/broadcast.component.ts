@@ -19,7 +19,7 @@ export class BroadcastComponent {
   video = viewChild<ElementRef<HTMLVideoElement>>('webcam');
   dots = viewChild<ElementRef<HTMLElement>>('dots');
   readonly broadcastService = inject(BroadcastService);
-  readonly transitionDuration = 0.07;
+  readonly transitionDuration = 80;
   readonly tf = inject(tfProv)
 
   get transform() {

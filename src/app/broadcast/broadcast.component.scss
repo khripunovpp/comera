@@ -60,6 +60,7 @@ video {
   left: 0;
   top: 0;
   transition-property: transform;
+  transition-timing-function: ease-in-out;
 }
 
 .window {
