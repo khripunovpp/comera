@@ -11,3 +11,10 @@ h1 {
   font-style: italic;
   color: #FF6F00;
 }
+
+
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}

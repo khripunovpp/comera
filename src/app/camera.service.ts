@@ -4,7 +4,7 @@ import {Injectable, signal} from "@angular/core";
   providedIn: 'root'
 })
 export class CameraService {
-  streamStarted = false;
+  streamStarted = signal(false)
   constraints = {
     video: true
   };
@@ -26,10 +26,21 @@ export class CameraService {
           // this.renderDots();
           this.video()!.srcObject = stream;
           this.video()!.addEventListener('loadeddata', () => {
-            this.streamStarted = true;
+            this.streamStarted.set(true);
             resolve();
           });
         });
     });
+  }
+
+  makePhoto() {
+    if (!this.video()?.videoWidth || !this.video()?.videoHeight) return;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    canvas.width = this.video()!.videoWidth;
+    canvas.height = this.video()!.videoHeight;
+    context.drawImage(this.video()!, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png');
   }
 }
