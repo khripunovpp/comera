@@ -21,10 +21,9 @@
     <div #dots class="dots" [hidden]="!streamStarted">
       <img src="./dickpick.png"
            [hidden]="!streamStarted || !dickPickCords.x || !dickPickCords.y"
-           [style.left.px]="dickPickCords.x"
-           [style.top.px]="dickPickCords.y"
-           style="position: absolute"
+           [style.transform]="'translate3d(' + dickPickCords.x + 'px,' + dickPickCords.y + 'px, 0'"
            class="dickPick"
+           [style.transition-duration]="transitionDuration"
            alt=""
            width="80">
 
@@ -35,5 +34,5 @@
            [style.width.px]="cropWidth"
            [style.height.px]="cropWidth"></div>
     </div>
+    <!--</div>-->
   </div>
-</div>

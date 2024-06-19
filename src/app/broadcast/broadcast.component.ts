@@ -60,10 +60,11 @@ export class BroadcastComponent {
   };
   supports = signal(!!(navigator.mediaDevices &&
     navigator.mediaDevices.getUserMedia))
-  bufferLength = 10;
-// Добавьте эти поля в ваш класс для хранения предыдущих координат
-  private previousCoords: Record<string, { x: number[], y: number[] }> = {};
-  private readonly threshold = 0.5; // Установите пороговое значение отклонения
+  readonly transitionDuration = 0.07;
+  private readonly bufferLength = 10;
+  private readonly confidenceThreshold = 0.4;
+  private readonly previousCoords: Record<string, { x: number[], y: number[] }> = {};
+  private readonly threshold = 0.5;
 
   onButtonClick(e: Event) {
     if (this.supports()) {
@@ -132,23 +133,29 @@ export class BroadcastComponent {
     return this.dotsCords[key];
   }
 
+  calcAbsoluteCords(
+    value: {
+      x: number
+      y: number
+    },
+  ): [number, number] {
+    return [
+      Math.ceil((value.x * this.cropWidth) + this.cropPoint[0] - (this.pointWidth / 2)),
+      Math.ceil((value.y * this.cropWidth) + this.cropPoint[1] - (this.pointWidth / 2))
+    ]
+  }
+
   putDot(
     cords: Record<string, { x: number; y: number; confidence: number }>,
     key: string
   ) {
     if (!this.getCords(key)) return;
-    const enoughConfidence = cords[key].confidence >= 0.4;
-    let realX = 0;
-    let realY = 0;
+    const enoughConfidence = cords[key].confidence >= this.confidenceThreshold;
 
     if (enoughConfidence) {
-      realX = Math.ceil((cords[key].x * 345) + this.cropPoint[0] - (this.pointWidth / 2));
-      realY = Math.ceil((cords[key].y * 345) + this.cropPoint[1] - (this.pointWidth / 2));
+      this.putIfOk(key, this.calcAbsoluteCords(cords[key]));
 
-      this.putIfOk(key, [realX, realY]);
-    }
-
-    if (key === 'nose' && enoughConfidence) {
+      if (key !== 'nose') return;
       const {x, y} = this.getCords(key);
       this.dickPickCords.x = x - 40
       this.dickPickCords.y = y - 70

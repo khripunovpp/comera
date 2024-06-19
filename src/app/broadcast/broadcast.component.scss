@@ -51,12 +51,16 @@ video {
 
 .noSupport {
   color: red;
-  text-align: center;position: absolute;
+  text-align: center;
+  position: absolute;
   z-index: 1;
 }
 
 .dickPick {
-  transition: transform 0.5s ease-in;
+  position: absolute;
+  left: 0;
+  top: 0;
+  transition-property: transform;
 }
 
 .window {
