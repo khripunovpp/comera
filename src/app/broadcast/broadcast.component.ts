@@ -1,10 +1,19 @@
-import {Component, ElementRef, signal, viewChild, ViewEncapsulation} from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  signal,
+  viewChild,
+  ViewEncapsulation
+} from '@angular/core';
 import {JsonPipe, NgIf} from "@angular/common";
 import {Helpers} from "../helpers";
 
 declare var cocoSsd: any;
 declare var tf: any;
 declare var navigator: any;
+
 
 @Component({
   selector: 'app-broadcast',
@@ -15,21 +24,33 @@ declare var navigator: any;
   ],
   templateUrl: './broadcast.component.html',
   styleUrl: './broadcast.component.scss',
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BroadcastComponent {
+
+  picksDimensions: Record<string, {
+    width: number;
+    height: number
+  }> = {
+    'dickpick': {
+      width: 80,
+      height: 103
+    },
+    'dickMask': {
+      width: 100,
+      height: 191
+    },
+  }
+  activePic = signal('dickMask');
   status = signal('status');
   video = viewChild<ElementRef<HTMLVideoElement>>('webcam');
   dots = viewChild<ElementRef<HTMLElement>>('dots');
-  model: any = null;
+  model = signal<any>(null);
   cropPoint = [170, 15];
   cropWidth = 345;
   MODEL_PATH = 'https://tfhub.dev/google/tfjs-model/movenet/singlepose/lightning/4';
   pointWidth = 4;
-  dickPickCords = {
-    x: 0,
-    y: 0,
-  }
   dotsCords: Record<string, {
     x: number,
     y: number,
@@ -61,10 +82,29 @@ export class BroadcastComponent {
   supports = signal(!!(navigator.mediaDevices &&
     navigator.mediaDevices.getUserMedia))
   readonly transitionDuration = 0.07;
+  dickPickCords = signal({
+    x: 0,
+    y: 0
+  });
+  shouldShowDick = computed(() => {
+    return this.dickPickCords().x > 0
+      && this.dickPickCords().y > 0
+  });
+  canEnableCam = computed(() => {
+    return this.supports() && this.model();
+  });
   private readonly bufferLength = 10;
   private readonly confidenceThreshold = 0.4;
   private readonly previousCoords: Record<string, { x: number[], y: number[] }> = {};
   private readonly threshold = 0.5;
+
+  get transform() {
+    return `translate3d(${this.dickPickCords().x}px, ${this.dickPickCords().y}px, 0)`;
+  }
+
+  get dickSrc() {
+    return `./${this.activePic()}.png`;
+  }
 
   onButtonClick(e: Event) {
     if (this.supports()) {
@@ -85,7 +125,7 @@ export class BroadcastComponent {
   }
 
   async loadModel() {
-    this.model = await tf.loadGraphModel(this.MODEL_PATH, {fromTFHub: true});
+    this.model.set(await tf.loadGraphModel(this.MODEL_PATH, {fromTFHub: true}));
     if (this.status()) {
       this.status.set('Model loaded');
     }
@@ -157,8 +197,12 @@ export class BroadcastComponent {
 
       if (key !== 'nose') return;
       const {x, y} = this.getCords(key);
-      this.dickPickCords.x = x - 40
-      this.dickPickCords.y = y - 70
+      const {width, height} = this.picksDimensions[this.activePic()];
+      this.dickPickCords.set({
+        x: x - width / 2,
+        y: y - height / 2
+      });
+
     }
 
     this.updateDot(key);
@@ -167,6 +211,7 @@ export class BroadcastComponent {
   updateDot(
     key: string
   ) {
+    if (!this.dotsRefs[key]) return;
     this.dotsRefs[key].style.top = `${this.dotsCords[key].y}px`;
     this.dotsRefs[key].style.left = `${this.dotsCords[key].x}px`;
   }
@@ -282,7 +327,7 @@ export class BroadcastComponent {
     let croppedImage = this.cropImage(imageTensor, this.cropPoint[0], this.cropPoint[1], this.cropWidth);
     let resizedImage = tf.image.resizeBilinear(croppedImage, [192, 192], true).toInt();
     let rtt = tf.expandDims(resizedImage);
-    let tensorOutput = this.model.predict(rtt);
+    let tensorOutput = this.model().predict(rtt);
     let arrayOutput = await tensorOutput.array();
     let cords = this.parseCords(arrayOutput)
     await this.drawPoints(cords);
@@ -298,12 +343,12 @@ export class BroadcastComponent {
   enableCam(
     event: any,
   ) {
-    if (!this.model) return;
+    if (!this.model()) return;
 
     navigator.mediaDevices.getUserMedia(this.constraints)
       .then((stream: any) => {
         if (!this.video()) return
-        this.renderDots();
+        // this.renderDots();
         this.video()!.nativeElement.srcObject = stream;
         this.video()!.nativeElement.addEventListener('loadeddata', () => {
           this.streamStarted = true;
@@ -315,7 +360,7 @@ export class BroadcastComponent {
   }
 
   predictWebcam(currentTime: number) {
-    if (!this.model) return;
+    if (!this.model()) return;
 
     this.calculate(this.video()?.nativeElement)
       .then(() => {

@@ -1,10 +1,10 @@
 <div #liveView class="camView">
   @if (supports()) {
     <button *ngIf="!streamStarted"
-            [disabled]="!model"
+            [disabled]="!canEnableCam()"
             (click)="onButtonClick($event)"
             class="enableCamButton">
-      {{ model ? 'Enable \nWebcam' : 'Wait \nbitch' }}
+      {{ model() ? 'Enable \nWebcam' : 'Wait \nbitch' }}
     </button>
   } @else {
     <p class="noSupport">Ohh shit! I'm done, i cannot take it</p>
@@ -19,13 +19,13 @@
            height="480"></video>
 
     <div #dots class="dots" [hidden]="!streamStarted">
-      <img src="./dickpick.png"
-           [hidden]="!streamStarted || !dickPickCords.x || !dickPickCords.y"
-           [style.transform]="'translate3d(' + dickPickCords.x + 'px,' + dickPickCords.y + 'px, 0'"
+      <img [attr.src]="dickSrc"
+           [hidden]="!shouldShowDick()"
+           [style.transform]="transform"
            class="dickPick"
-           [style.transition-duration]="transitionDuration"
+           [style.transition-duration.ms]="transitionDuration"
            alt=""
-           width="80">
+           [attr.width]="picksDimensions[activePic()].width">
 
       <div class="window"
            #window
