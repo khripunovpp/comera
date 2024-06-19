@@ -12,10 +12,27 @@ export class BroadcastService {
   constructor() {
   }
 
-  cameraService = inject(CameraService);
-  modelService = inject(ModelService);
-  movenetModelService = inject(MovenetModelService);
-  dotsCords: Record<string, {
+  dotsRefs: Record<string, any> = {}
+  readonly activePic = signal('dickMask');
+  readonly dickPickCords = signal({
+    x: 0,
+    y: 0
+  });
+  readonly shouldShowDick = computed(() => {
+    return this.dickPickCords().x > 0
+      && this.dickPickCords().y > 0
+  });
+  readonly transitionDuration = 50;
+  private readonly cameraService = inject(CameraService);
+  readonly streamStarted = this.cameraService.streamStarted
+  readonly supports = this.cameraService.supports
+  private readonly modelService = inject(ModelService);
+  readonly canEnableCam = computed(() => {
+    return this.cameraService.supports() && this.modelService.model();
+  });
+  readonly modelReady = this.modelService.model
+  private readonly movenetModelService = inject(MovenetModelService);
+  private readonly dotsCords: Record<string, {
     x: number,
     y: number,
     color: string
@@ -38,9 +55,8 @@ export class BroadcastService {
     leftAnkle: {x: 0, y: 0, color: 'red'},
     rightAnkle: {x: 0, y: 0, color: 'red'},
   }
-  dotsRefs: Record<string, any> = {}
-  pointWidth = 4;
-  picksDimensions: Record<string, {
+  private readonly pointWidth = 4;
+  private readonly picksDimensions: Record<string, {
     width: number;
     height: number
   }> = {
@@ -53,28 +69,14 @@ export class BroadcastService {
       height: 191
     },
   }
-  activePic = signal('dickMask');
-  dickPickCords = signal({
-    x: 0,
-    y: 0
-  });
-  shouldShowDick = computed(() => {
-    return this.dickPickCords().x > 0
-      && this.dickPickCords().y > 0
-  });
-  canEnableCam = computed(() => {
-    return this.cameraService.supports() && this.modelService.model();
-  });
-  streamStarted = this.cameraService.streamStarted
-  supports = this.cameraService.supports
-  modelReady = this.modelService.model
-  predictWebcamThrottled = _.throttle(() => {
-    this.predictWebcam();
-  }, 120);
   private readonly previousCoords: Record<string, { x: number[], y: number[] }> = {};
   private readonly confidenceThreshold = 0.4;
+  private readonly predictDelay = 100;
   private readonly bufferLength = 10;
-  private readonly threshold = 0.5;
+  private readonly stdDeviationThreshold = 0.3;
+  private readonly predictWebcamThrottled = _.throttle(() => {
+    this.predictWebcam();
+  }, this.predictDelay);
 
   get imgWidth() {
     return this.picksDimensions[this.activePic()].width;
@@ -129,7 +131,6 @@ export class BroadcastService {
         x: x - width / 2,
         y: y - height / 2
       });
-
     }
 
     this.updateDot(key);
@@ -145,10 +146,22 @@ export class BroadcastService {
     const shouldUpdateDotsCordsX = this.calculateStdDeviation(this.previousCoords[key].x, value[0]);
     const shouldUpdateDotsCordsY = this.calculateStdDeviation(this.previousCoords[key].y, value[1]);
 
-    if (this.isOk(shouldUpdateDotsCordsX)) {
+    const lastX = this.previousCoords[key]?.x?.[this.previousCoords[key]?.x?.length - 1];
+    const lastY = this.previousCoords[key]?.y?.[this.previousCoords[key]?.y?.length - 1];
+    let lastXGreater = true;
+    let lastYGreater = true;
+
+    if (lastX) {
+      lastXGreater = lastX + 1 > value[0];
+    }
+    if (lastY) {
+      lastYGreater = lastY + 1 > value[1];
+    }
+
+    if (this.isOk(shouldUpdateDotsCordsX) && lastXGreater) {
       this.dotsCords[key].x = value[0];
     }
-    if (this.isOk(shouldUpdateDotsCordsY)) {
+    if (this.isOk(shouldUpdateDotsCordsY) && lastYGreater) {
       this.dotsCords[key].y = value[1];
     }
   }
@@ -227,22 +240,18 @@ export class BroadcastService {
   private isOk(
     stdDeviation: number
   ) {
-    return stdDeviation > this.threshold;
+    return stdDeviation > this.stdDeviationThreshold;
   }
 
-  private calculateStdDeviation(coords: number[], newValue: number): number {
+  private calculateStdDeviation(
+    coords: number[],
+    newValue: number,
+  ): number {
     if (newValue) coords.push(newValue);
-
-    // Ограничиваем размер массива до последних 10 элементов
     if (coords.length > this.bufferLength) coords.shift();
-
-    // Вычисляем среднее значение
-    const mean = Helpers.calculateMean(coords);
-
-    // Вычисляем среднее отклонение
-    const stdDeviation = Helpers.calculateStdDeviation(coords, mean);
-
-    // Возвращаем true, если стандартное отклонение превышает пороговое значение
-    return stdDeviation;
+    return Helpers.calculateStdDeviation(
+      coords,
+      Helpers.calculateMean(coords)
+    );
   }
 }

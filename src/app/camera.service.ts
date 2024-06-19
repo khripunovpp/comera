@@ -23,7 +23,6 @@ export class CameraService {
       return navigator.mediaDevices.getUserMedia(this.constraints)
         .then((stream: any) => {
           if (!this.video()) return
-          // this.renderDots();
           this.video()!.srcObject = stream;
           this.video()!.addEventListener('loadeddata', () => {
             this.streamStarted.set(true);

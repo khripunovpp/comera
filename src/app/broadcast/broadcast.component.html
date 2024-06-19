@@ -35,7 +35,7 @@
            [attr.width]="broadcastService.imgWidth"
            [hidden]="!broadcastService.shouldShowDick()"
            [style.transform]="transform"
-           [style.transition-duration.ms]="transitionDuration"
+           [style.transition-duration.ms]="broadcastService.transitionDuration"
            alt=""
            class="dickPick">
 
@@ -56,10 +56,10 @@
       Try another dick
     </button>
 
-<!--    <button (click)="makePhoto()"-->
-<!--            [hidden]="!broadcastService.streamStarted()"-->
-<!--            class="changeButton">-->
-<!--      makePhotoByTimeout-->
-<!--    </button>-->
+    <!--    <button (click)="makePhoto()"-->
+    <!--            [hidden]="!broadcastService.streamStarted()"-->
+    <!--            class="changeButton">-->
+    <!--      makePhotoByTimeout-->
+    <!--    </button>-->
   </div>
 </div>
