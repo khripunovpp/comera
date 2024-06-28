@@ -4,6 +4,8 @@ import {ModelService} from "../model.service";
 import {MovenetModelService} from "../movenet-model.service";
 import {Helpers} from "../helpers";
 import _ from 'lodash';
+import {CircularQueue} from "../structures/circular-queue";
+
 
 @Injectable({
   providedIn: 'root'
@@ -23,6 +25,7 @@ export class BroadcastService {
       && this.dickPickCords().y > 0
   });
   readonly transitionDuration = 50;
+  readonly #queues: Map<string, unknown> = new Map()
   private readonly cameraService = inject(CameraService);
   readonly streamStarted = this.cameraService.streamStarted
   readonly supports = this.cameraService.supports
@@ -69,7 +72,6 @@ export class BroadcastService {
       height: 191
     },
   }
-  private readonly previousCoords: Record<string, { x: number[], y: number[] }> = {};
   private readonly confidenceThreshold = 0.4;
   private readonly predictDelay = 100;
   private readonly bufferLength = 10;
@@ -91,7 +93,6 @@ export class BroadcastService {
     return {x, y};
   }
 
-
   get windowCords() {
     return this.cropPoints;
   }
@@ -99,7 +100,6 @@ export class BroadcastService {
   get windowWidth() {
     return this.movenetModelService.cropWidth;
   }
-
 
   get faceSquare() {
     return this.faceWidth * this.faceHeight;
@@ -119,8 +119,26 @@ export class BroadcastService {
     )
   }
 
+  getQueue<T = number>(
+    key: string
+  ) {
+    return this.#queues.get(key) as CircularQueue<T>;
+  }
+
   get zoom() {
+
     return this.faceWidth / this.imgWidth;
+  }
+
+  initQueues() {
+    Object.keys(this.dotsCords).forEach((key) => {
+      this.#queues.set(key, {
+        x: new CircularQueue(this.bufferLength),
+        y: new CircularQueue(this.bufferLength),
+      });
+    });
+
+    this.#queues.set('zoom', new CircularQueue(this.bufferLength));
   }
 
   load(
@@ -176,14 +194,20 @@ export class BroadcastService {
     key: string,
     value: [number, number],
   ) {
-    if (!this.previousCoords[key]) {
-      this.previousCoords[key] = {x: [], y: []};
+    let shouldUpdateDotsCordsX = 0
+    let shouldUpdateDotsCordsY = 0
+    let lastX = 0
+    let lastY = 0
+    const q = this.#queues.get(key)
+    if (q) {
+      const xBuffer = ((q as any)['x'] as CircularQueue)
+      const yBuffer = ((q as any)['y'] as CircularQueue)
+      shouldUpdateDotsCordsX = this.calculateStdDeviation(xBuffer, value[0]);
+      shouldUpdateDotsCordsY = this.calculateStdDeviation(yBuffer, value[1]);
+      lastX = xBuffer.last()
+      lastY = yBuffer.last()
     }
-    const shouldUpdateDotsCordsX = this.calculateStdDeviation(this.previousCoords[key].x, value[0]);
-    const shouldUpdateDotsCordsY = this.calculateStdDeviation(this.previousCoords[key].y, value[1]);
 
-    const lastX = this.previousCoords[key]?.x?.[this.previousCoords[key]?.x?.length - 1];
-    const lastY = this.previousCoords[key]?.y?.[this.previousCoords[key]?.y?.length - 1];
     let lastXGreater = true;
     let lastYGreater = true;
 
@@ -270,6 +294,7 @@ export class BroadcastService {
 
   private _enableCam() {
     this.cameraService.enableCam().then(() => {
+      this.initQueues();
       this.predictWebcamThrottled();
     })
   }
@@ -281,14 +306,14 @@ export class BroadcastService {
   }
 
   private calculateStdDeviation(
-    coords: number[],
+    coords: CircularQueue,
     newValue: number,
   ): number {
-    if (newValue) coords.push(newValue);
-    if (coords.length > this.bufferLength) coords.shift();
+    if (newValue) coords.enqueue(newValue);
+    const queue = coords.getQueue();
     return Helpers.calculateStdDeviation(
-      coords,
-      Helpers.calculateMean(coords)
+      queue,
+      Helpers.calculateMean(queue)
     );
   }
 }
