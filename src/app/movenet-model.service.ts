@@ -34,6 +34,36 @@ export class MovenetModelService {
     ]
   }
 
+  calculateFaceSquare(
+    leftEar: { x: number, y: number },
+    rightEar: { x: number, y: number }
+  ): number {
+    // Calculate the distance between ears
+    const d = Math.sqrt(Math.pow(rightEar.x - leftEar.x, 2) + Math.pow(rightEar.y - leftEar.y, 2));
+
+    // Calculate the side of the square
+    const s = d / Math.sqrt(2);
+
+    // Calculate the square area
+    const S = Math.pow(s, 2);
+
+    return S;
+  }
+
+  calculateFaceWidth(
+    leftEar: { x: number, y: number },
+    rightEar: { x: number, y: number }
+  ): number {
+    return Math.abs(rightEar.x - leftEar.x);
+  }
+
+  calculateFaceHeight(
+    leftEar: { x: number, y: number },
+    rightEar: { x: number, y: number }
+  ): number {
+    return this.calculateFaceWidth(leftEar, rightEar) * 1.5;
+  }
+
   prepareImgTensor() {
     const points = this.getCropPoint();
     const imageTensor = this.tf.browser.fromPixels(this.cameraService.video());

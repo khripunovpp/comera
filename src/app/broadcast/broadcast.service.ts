@@ -57,7 +57,7 @@ export class BroadcastService {
   }
   private readonly pointWidth = 4;
   private readonly picksDimensions: Record<string, {
-    width: number;
+    width: number
     height: number
   }> = {
     'dickpick': {
@@ -100,6 +100,29 @@ export class BroadcastService {
     return this.movenetModelService.cropWidth;
   }
 
+
+  get faceSquare() {
+    return this.faceWidth * this.faceHeight;
+  }
+
+  get faceWidth() {
+    return this.movenetModelService.calculateFaceWidth(
+      this.dotsCords['leftEar'],
+      this.dotsCords['rightEar']
+    )
+  }
+
+  get faceHeight() {
+    return this.movenetModelService.calculateFaceHeight(
+      this.dotsCords['leftEar'],
+      this.dotsCords['rightEar']
+    )
+  }
+
+  get zoom() {
+    return this.faceWidth / this.imgWidth;
+  }
+
   load(
     video: HTMLVideoElement
   ) {
@@ -129,10 +152,20 @@ export class BroadcastService {
 
       if (key !== 'nose') return;
       const {x, y} = this.getCords(key);
-      const {width, height} = this.picksDimensions[this.activePic()];
+      const imgW = this.imgWidth * this.zoom;
+      const imgH = this.imgHeight * this.zoom;
+      console.log('dick', {
+        x,
+        y,
+        imgW,
+        imgH,
+        imgWidth: this.imgWidth,
+        imgHeight: this.imgHeight,
+        zoom: this.zoom
+      })
       this.dickPickCords.set({
-        x: x - width / 2,
-        y: y - height / 2
+        x: x - imgW / 2,
+        y: y - imgH / 2
       });
     }
 
