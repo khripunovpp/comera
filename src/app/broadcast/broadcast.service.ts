@@ -1,4 +1,4 @@
-import {computed, inject, Injectable, signal} from "@angular/core";
+import {computed, inject, Injectable, NgZone, signal} from "@angular/core";
 import {CameraService} from "../camera.service";
 import {ModelService} from "../model.service";
 import {MovenetModelService} from "../movenet-model.service";
@@ -15,6 +15,7 @@ export class BroadcastService {
   }
 
   dotsRefs: Record<string, any> = {}
+  readonly zoom = signal(1);
   readonly activePic = signal('dickMask');
   readonly dickPickCords = signal({
     x: 0,
@@ -25,6 +26,7 @@ export class BroadcastService {
       && this.dickPickCords().y > 0
   });
   readonly transitionDuration = 50;
+  private readonly _ngZone = inject(NgZone);
   readonly #queues: Map<string, unknown> = new Map()
   private readonly cameraService = inject(CameraService);
   readonly streamStarted = this.cameraService.streamStarted
@@ -77,15 +79,21 @@ export class BroadcastService {
   private readonly bufferLength = 10;
   private readonly stdDeviationThreshold = 0.3;
   private readonly predictWebcamThrottled = _.throttle(() => {
-    this.predictWebcam();
+    this._ngZone.runOutsideAngular(() => {
+      this.predictWebcam();
+    });
   }, this.predictDelay);
 
   get imgWidth() {
-    return this.picksDimensions[this.activePic()].width;
+    return this.picksDimensions[this.activePic()].width
   }
 
   get imgHeight() {
     return this.picksDimensions[this.activePic()].height;
+  }
+
+  get dickWidth() {
+    return Math.ceil(this.imgWidth * this.zoom());
   }
 
   get cropPoints() {
@@ -125,11 +133,6 @@ export class BroadcastService {
     return this.#queues.get(key) as CircularQueue<T>;
   }
 
-  get zoom() {
-
-    return this.faceWidth / this.imgWidth;
-  }
-
   initQueues() {
     Object.keys(this.dotsCords).forEach((key) => {
       this.#queues.set(key, {
@@ -137,8 +140,6 @@ export class BroadcastService {
         y: new CircularQueue(this.bufferLength),
       });
     });
-
-    this.#queues.set('zoom', new CircularQueue(this.bufferLength));
   }
 
   load(
@@ -170,17 +171,8 @@ export class BroadcastService {
 
       if (key !== 'nose') return;
       const {x, y} = this.getCords(key);
-      const imgW = this.imgWidth * this.zoom;
-      const imgH = this.imgHeight * this.zoom;
-      console.log('dick', {
-        x,
-        y,
-        imgW,
-        imgH,
-        imgWidth: this.imgWidth,
-        imgHeight: this.imgHeight,
-        zoom: this.zoom
-      })
+      const imgW = this.imgWidth * this.zoom();
+      const imgH = this.imgHeight * this.zoom();
       this.dickPickCords.set({
         x: x - imgW / 2,
         y: y - imgH / 2
@@ -253,15 +245,9 @@ export class BroadcastService {
     this.dotsRefs[key].style.left = `${this.dotsCords[key].x}px`;
   }
 
-  async drawPoints(cords: any) {
-    Object.keys(this.dotsCords).forEach((key) => {
-      this.putDot(cords, key);
-    });
-  }
-
   predictWebcam() {
     this.movenetModelService.calculate()
-      .then(cords => this.drawPoints(cords))
+      .then(cords => this._update(cords))
       .then(() => {
         window.requestAnimationFrame(() => {
           this.predictWebcamThrottled();
@@ -290,6 +276,23 @@ export class BroadcastService {
     const win = window.open();
     if (!win) return;
     win.document.write(`<img src="${dataUrl}"/>`);
+  }
+
+  private async _drawPoints(cords: any) {
+    Object.keys(this.dotsCords).forEach((key) => {
+      this.putDot(cords, key);
+    });
+  }
+
+  private _calculateZoom() {
+    const faceSquare = this.faceSquare;
+    const imgSquare = this.imgWidth * this.imgHeight;
+    return Math.sqrt(faceSquare / imgSquare);
+  }
+
+  private async _update(cords: any) {
+    await this._drawPoints(cords)
+    this.zoom.set(this._calculateZoom());
   }
 
   private _enableCam() {

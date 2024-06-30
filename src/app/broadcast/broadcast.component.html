@@ -31,7 +31,7 @@
          [hidden]="!broadcastService.streamStarted()"
          class="dots">
       <img [attr.src]="dickSrc"
-           [attr.width]="broadcastService.imgWidth * broadcastService.zoom"
+           [attr.width]="broadcastService.dickWidth"
            [hidden]="!broadcastService.shouldShowDick()"
            [style.transform]="transform"
            [style.transition-duration.ms]="broadcastService.transitionDuration"
